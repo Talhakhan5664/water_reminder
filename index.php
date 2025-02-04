@@ -123,7 +123,7 @@ $check_stmt->close();
         .card {
             border-radius: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .btn-primary, .btn-success {
             border-radius: 50px;
