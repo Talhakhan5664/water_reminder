@@ -121,7 +121,7 @@ $check_stmt->close();
             color: #fff !important;
         }
         .card {
-            border-radius: 10px;
+            border-radius: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
@@ -138,7 +138,94 @@ $check_stmt->close();
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
         <a class="navbar-brand" href="#">Water Reminder</a>
-        
+        ```php
+// Fetch user details
+$sql = "SELECT id, username FROM users WHERE email = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result = $stmt->get_result();
+$user_data = $result->fetch_assoc();
+$user_id = $user_data['id'];
+$username = $user_data['username'];
+$stmt->close();
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['water_goal'])) {
+        $water_goal = (int)$_POST['water_goal'];
+
+        $stmt = $conn->prepare("INSERT INTO user_goals (user_id, water_goal, water_consumed, goal_date) 
+        VALUES (?, ?, 0, CURDATE()) 
+        ON DUPLICATE KEY UPDATE water_goal = ?, water_consumed = 0;");
+        $stmt->bind_param("iii", $user_id, $water_goal, $water_goal);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    if (isset($_POST['add_water'])) {
+        $additional_water = (int)$_POST['add_water'];
+        $time_consumed = date("H:i:s");
+
+        // Update water consumption
+        $sql = "UPDATE user_goals SET water_consumed = water_consumed + ? 
+                WHERE user_id = ? AND goal_date = CURDATE();";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $additional_water, $user_id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Insert water log
+        $sql = "INSERT INTO water_logs (user_id, water_amount, time_consumed, log_date) 
+                VALUES (?, ?, ?, CURDATE());";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("iis", $user_id, $additional_water, $time_consumed);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+// Fetch current goal and water consumption
+$sql = "SELECT water_goal, water_consumed FROM user_goals 
+        WHERE user_id = ? AND goal_date = CURDATE();";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$goal_data = $result->fetch_assoc();
+$stmt->close();
+
+$water_goal = $goal_data['water_goal'] ?? 0;
+$water_consumed = $goal_data['water_consumed'] ?? 0;
+
+// Fetch unread notifications
+$sql = "SELECT id, message FROM notifications WHERE user_id = ? AND status = 'sent' ORDER BY created_at DESC";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$notifications = $result->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+// Insert a new water reminder notification every hour
+$current_time = date("H:i:s");
+$check_sql = "SELECT id FROM notifications WHERE user_id = ? AND message LIKE '%Time to drink water%' AND created_at >= NOW() - INTERVAL 30 SECOND";
+$check_stmt = $conn->prepare($check_sql);
+$check_stmt->bind_param("i", $user_id);
+$check_stmt->execute();
+$check_stmt->store_result();
+
+if ($check_stmt->num_rows == 0) {
+    $message = " Time to drink water! Stay hydrated! $username !  [$current_time] ";
+    $insert_sql = "INSERT INTO notifications (user_id, message, status) VALUES (?, ?, 'sent')";
+    $insert_stmt = $conn->prepare($insert_sql);
+    $insert_stmt->bind_param("is", $user_id, $message);
+    $insert_stmt->execute();
+    $insert_stmt->close();
+}
+
+$check_stmt->close();
+```
 
         <div class="dropdown">
             <button class="btn btn-dark position-relative" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
