@@ -79,7 +79,7 @@ $stmt->close();
 
 // Insert a new water reminder notification every hour
 $current_time = date("H:i:s");
-$check_sql = "SELECT id FROM notifications WHERE user_id = ? AND message LIKE '%Time to drink water%' AND created_at >= NOW() - INTERVAL 30 SECOND";
+$check_sql = "SELECT id FROM notifications WHERE user_id = ? AND message LIKE '%Time to drink water%' AND created_at >= NOW() - INTERVAL 1 HOUR ";
 $check_stmt = $conn->prepare($check_sql);
 $check_stmt->bind_param("i", $user_id);
 $check_stmt->execute();
@@ -299,8 +299,8 @@ document.addEventListener("DOMContentLoaded", function () {
         requestNotificationPermission();
     }
 
-    // Fetch notifications every 30 seconds
-    setInterval(fetchNotifications, 30 * 1000);
+    // Fetch notifications every 1 hour seconds
+    setInterval(fetchNotifications, 60 * 60 * 1000);
 });
 
 
