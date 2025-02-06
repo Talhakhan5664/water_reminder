@@ -300,7 +300,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Fetch notifications every 1 hour seconds
-    setInterval(fetchNotifications, 60 * 60 * 1000);
+    setInterval(fetchNotifications, 60 * 60 * 1000 );
 });
 
 
